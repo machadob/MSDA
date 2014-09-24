@@ -1,0 +1,27 @@
+---
+title: "Assignment 4"
+author: "Burton Machado"
+date: "Tuesday, September 22, 2014"
+output: html_document
+---
+*The best movie is supposed to be the one which had the highest (top) rating. The most popular movies is the one that got a high rating with the most votes.* <P>
+*There are three parameters that we can take into account 1)The number of movies per year. 2) The average rating for the movies. 3) The number of votes for movies in a year.
+We can take some kind of weighted average of the three and decide on the best year. For the weighted average, the rating should get high weight, a lower standard deviation should have higher weight and a higher number of votes should have a higher weight. From inspection of the three graphs the year 2002 seems to be the best candidate.*
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(plyr)
+
+df <- read.csv('c:/Temp/movies.tab',sep='\t')
+num<-rep(1,length(df$rating))
+df<-cbind(df,num)
+
+s<-ddply(df, .(year), summarize, mean = mean(rating), std = sd(rating), No_of_Movies = sum(num), Total_Votes = sum(votes) )
+s
+s$std[is.na(s$std)]<-0
+ggplot(data=s,aes(x=s$year, y=s$mean, group=1)) + geom_line() + xlab("Year") + ylab("Mean of Rating")
+ggplot(data=s,aes(x=s$year, y=s$std, group=1)) + geom_line() + xlab("Year") + ylab("Std Dev of Rating")
+ggplot(data=s,aes(x=s$year, y=s$Total_Votes, group=1)) + geom_line() + xlab("Year") + ylab("Total votes")
+
+```
+
