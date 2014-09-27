@@ -1,0 +1,48 @@
+
+1. 
+ Answer: tidying
+ 
+2. 
+Answer: The two other properties are:
+	1) Each variable forms a column.
+	2) Each observation forms a row.
+
+3. 
+Answer: Following are the five most common problems with messy datasets according to Hadley Wickham.
+ 1) Column headers are values, not variable names
+ 2) Multiple variables are stored in one column
+ 3) Variables are stored in both rows and columns
+ 4) Multiple types of observational units are stored in the same table
+ 5) A single observational unit is stored in multiple tables
+ 
+4. 
+a. Filter
+ Answer: Subsetting or removing observations based on some condition.
+b. Transform
+ Answer: Adding or Modifying variables.
+c. Aggregate
+ Answer: Collapse multiple values into a single value.
+d. Sort
+ Answer: Changing the order of observations.
+ 
+5. 
+Answer: subset
+
+Reading Quiz: “Introduction to dplyr”
+1. 
+Answer: 
+Advantages of dplyr over plyr are as follows:.
+	dplyr is much faster than plyr.
+	dplyr provides better support for joins.
+Disdvantages of dplyr compared to plyr are as follows:	
+	dplyr only works with dataframes.
+
+2. 
+Advantages of plyr over base R are as follows:
+	plyr allows more flexibility with the input and output formats.
+disadvantages of plyr over base R are as follows:	
+	The base R functions allow for working with more data types which is not a big advantage
+
+Reading Quiz: “tidyr”
+1. 
+Answer: spread and gather
