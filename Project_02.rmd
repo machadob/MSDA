@@ -1,0 +1,99 @@
+---
+title: "Project 02"
+author: "Burton Machado"
+date: "Sunday, September 28, 2014"
+output: html_document
+---
+
+```{r test}
+library(plyr)
+library(ggplot2)
+
+# We read a csv file with stock prices for IBM. These are daily benchmark values like 
+# Opening price, closing price etc. We will agrregate by month to perform the analytics.
+# We will show that the benchmark prices correlate to each other very strongly
+# The prices were sourced from quandl.com
+
+df<-read.csv('c:/Temp/IBM.csv',stringsAsFactors=FALSE)
+head(df)
+
+#Create a new date column (year_month) that has only year and month so that we caln aggregate by year and month.
+#The day in this column is always set to 01
+
+year_month<-sub("-\\d\\d$","-01",df$Date)
+year_month<-as.Date(year_month,"%Y-%m-%d")
+df$Date <- as.Date(df$Date,"%Y-%m-%d")
+
+#bind the new column to the data frame
+
+df<-cbind(df,year_month)
+head(df)
+#---- Calculate the Means of the most important prices ----
+
+means<-ddply(df, c('year_month'), function(x)c(mOpen=mean(x$Open),
+  mHigh=mean(x$High), mLow=mean(x$Low), mClose=mean(x$Close), mVolume=mean(x$Volume)))
+head(means)
+#
+#---- Calculate the Standard Deviations of the most important prices ----
+
+stds<-ddply(df, c('year_month'), function(x)c(sOpen=sd(x$Open), 
+  sHigh=sd(x$High), sLow=sd(x$Low), sClose=sd(x$Close), sVolume=sd(x$Volume)))
+head(stds)
+      
+#There is a strong positive corelation between the various prices and the 
+#Open price for a stock (IBM).In this case we have used the Open price for comparison, 
+#but it can be shown that this is true between all the price.
+cor(df$Open,df$High)
+
+cor(df$Open,df$Low)
+
+cor(df$Open,df$Close)
+
+#There is a stronger positive corelation between the aggregated means of various prices 
+#and the mean of the Open price for a stock (IBM).In this case we have used the Open 
+#price for comparison, but it can be shown that this is true between all the price.
+cor(means$mOpen,means$mHigh)
+
+cor(means$mOpen,means$mLow)
+
+cor(means$mOpen,means$mClose)
+
+
+#There is a strong positive corelation between the aggregated standard deviations of 
+#various prices and the standard deviation of the Open price for a stock (IBM). 
+#This means that the variations among the prices are also correlated. In this case 
+#we have used the Open price for comparison, but it can be shown that this is true 
+#between all the price.
+cor(stds$sOpen,stds$sHigh)
+
+cor(stds$sOpen,stds$sLow)
+
+cor(stds$sOpen,stds$sClose)
+
+#------------------------------------------------------------------------------------------
+# A visual inspection of the two plots below shows how similar the Open and Close prices are
+# 
+```
+
+
+```{r, echo=FALSE}
+
+ggplot(data=df, aes(x=year_month, y=Close, group=1)) + geom_line()
+
+ggplot(data=df, aes(x=year_month, y=Open, group=1)) + geom_line()
+```
+```{r}
+#Run least square regression on Open and Close prices
+#We will get the equation of the regression line.
+#Note from the equation how close to 1 the slope is and how small the y intercept is
+r<-lm(df$Open~df$Close)
+print(paste("The equation of the regression line is y = " ,r[[1]][[2]],"x + ", r[[1]][[1]]),sep="")
+print("Here x is df$Close and y is df$Open") 
+```
+
+```{r, echo=FALSE}
+# The plot below shows a linear relationship between the Open and Close prices
+# The slope is very close to 1 showing that Open and Close are almost equal
+ggplot(data=df, aes(x=Close, y=Open, group=1)) + geom_smooth(method='lm')
+```
+
