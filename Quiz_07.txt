@@ -1,0 +1,12 @@
+2) There are 2 films that contain the word bride in their title.
+SQL: select * from film where lower(title) like '%bride%'
+
+3)PostgreSQL provides the ILIKE operator that acts like the LIKE operator in addition to matching values case-insensitively. 
+The SQL in Problem 2 could be written as:
+
+select * from film where title ilike '%bride%'
+
+The advantage of using this (ILIKE) functionality is the simplicity that it offers while filtering.
+The disadvantage is that it is PostgreSQL specific and hence is not portable across databases (in case you need to move to a different database in the future).
+
+4) The customerId from the customer table is used as a foreign key in the Payment and Rentals tables. If you try to delete a customer (from the Customer table) without deleting the records in these two tables, you will get a constraint violation error from the database. You will first need to delete the linked records from the Payment and Rentals tables before deleting the customer from the Customer table.
