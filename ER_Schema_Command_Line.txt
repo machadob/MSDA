@@ -1,0 +1,1 @@
+C:\Dev_Tools\Schema>java -jar schemaSpy_5.0.0.jar -cp C:\Dev_Tools\PostgreSQL_JDBC_Driver\postgresql-9.3-1102.jdbc3.jar -t pgsql  -host localhost:5432 -db employee -s public -u burton -p password -o output

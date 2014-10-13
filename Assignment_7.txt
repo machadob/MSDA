@@ -1,0 +1,81 @@
+-- This is a comment in a SQL script (staring with two hyphens)
+
+-- Q2) CREATE TABLE statements are as follows:
+
+CREATE TABLE department(
+    departmentId integer NOT NULL PRIMARY KEY,
+    departmentName VARCHAR (50) NOT NULL
+);
+
+CREATE TABLE employee(
+    employeeId integer NOT NULL PRIMARY KEY,
+    departmentId integer REFERENCES department (departmentId) MATCH SIMPLE,
+    firstName VARCHAR (50) NOT NULL,
+    lastName VARCHAR (50) NOT NULL,
+    salary NUMERIC NOT NULL,
+    email VARCHAR (355),
+    created_on TIMESTAMP NOT NULL
+    
+);
+
+-- There can be many employees in one department.
+
+-- Q3) SQL to populate both the tables. The departmentId in the employee table can be NULL.
+
+insert into department(departmentId, departmentName)
+values (1, 'IT');
+insert into department(departmentId, departmentName)
+values (2, 'Accounts');
+insert into department(departmentId, departmentName)
+values (3, 'Complaince');
+insert into department(departmentId, departmentName)
+values (4, 'Legal');
+
+-- The departmentId can be NULL (not yet assigned). I have entered a NULL as departmentId for employee Stan Van (Id 5)
+-- Deparment with departmentId 4 has two employees in it: Linda Smith and Mary Allen.
+
+insert into employee(employeeId, departmentId, firstName, lastName, salary, email, created_on) 
+values(1, 2, 'John', 'Doe', 120000.00,'john.doe@cunymail.com',to_date('2014-10-01', 'YYYY-MM-DD'));
+
+insert into employee(employeeId, departmentId, firstName, lastName, salary, email, created_on) 
+values(2, 1, 'Jerry', 'Price', 125000.00,NULL,to_date('2014-10-02', 'YYYY-MM-DD'));
+
+insert into employee(employeeId, departmentId, firstName, lastName, salary, email, created_on) 
+values(3, 4, 'Linda', 'Smith', 110000.00,'linda.smith@cunymail.com',to_date('2014-10-05', 'YYYY-MM-DD'));
+
+insert into employee(employeeId, departmentId, firstName, lastName, salary, email, created_on) 
+values(4, 4, 'Mary', 'Allen', 110000.00,'mary.Allen@cunymail.com',to_date('2014-10-06', 'YYYY-MM-DD'));
+
+insert into employee(employeeId, departmentId, firstName, lastName, salary, email, created_on) 
+values(5, NULL, 'Stan', 'Van', 140000.00,'stan.van@cunymail.com',to_date('2014-10-07', 'YYYY-MM-DD'));
+
+
+-- Q4) Following are the join statements.
+
+-- The departmentId can be NULL
+
+-- Following is a inner join which will output matching rows in both the tables.
+
+select * from employee e join department d
+on e.departmentId = d.departmentId;
+
+-- Following is a left outer join which will shows rows in the left table (employee) that 
+-- do not have macthing rows in the department table
+
+select * from employee e left outer join department d
+on e.departmentId = d.departmentId;
+
+-- Following is a right outer join which will shows rows in the right table (department) that 
+-- do not have macthing rows in the employee table
+
+select * from employee e right outer join department d
+on e.departmentId = d.departmentId;
+
+-- Following is a full outer join which will shows rows that 
+-- do not have macthing rows in either table
+
+select * from employee e full outer join department d
+on e.departmentId = d.departmentId;
+
+
+
