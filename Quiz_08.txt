@@ -1,0 +1,41 @@
+
+-- Q1) The create and insert statements for the table are as follows:
+drop table if exists employee;
+CREATE TABLE employee
+(
+  employeeid integer NOT NULL,
+  firstname character varying(50) NOT NULL,
+  lastname character varying(50) NOT NULL,
+  title character varying(50),
+  department character varying(50),
+  parentid integer,
+  CONSTRAINT employee_pkey PRIMARY KEY (employeeid)
+);
+
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (1, 'Steve', 'Jobs', 'CEO', 'Management', NULL);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (2, 'Scott', 'Forstall', 'SVP', 'IOS Software', 1);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (3, 'Peter', 'Oppenheimer', 'CFO', 'Finance', 1);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (4, 'Henri', 'Lamiraux', 'VP', 'IOS Software', 2);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (5, 'Isabel', 'Ge Mahe', 'VP', 'IOS Software', 2);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (6, 'Kim', 'Vorrath', 'VP', 'IOS Software', 2);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (7, 'Betsy', 'Rafael', 'VP', 'Finance', 3);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (8, 'Gary', 'Wipfler', 'VP', 'Finance', 3);
+
+-- Q2) Query that displays all the information in the table.
+select * from employee;
+
+-- Q3)
+  -- a) Tim Cook replaces Steve Jobs as CEO. 
+update employee set firstname='Tim', lastname='Cook' where employeeid=1;
+
+  -- b)Apple (hypothetically) hires Susan Wojcicki away from Google to replace Tim Cook at COO, with the COO reports unchanged.
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (9, 'Susan', 'Wojcicki', 'COO', 'Operations', 1);
+
+-- I am not sure if we need to insert Susan Wojcicki's reports into the database. If they need to be inserted, the following SQL can be used:
+
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (10, 'John', 'Couch', 'VP', 'Operations', 9);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (11, 'John', 'Brandon', 'VP', 'Operations', 9);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (12, 'Michael', 'Fenger', 'VP', 'Operations', 9);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (13, 'Douglas', 'Beck', 'VP', 'Operations', 9);
+insert into employee (employeeid,   firstname,   lastname,   title,   department,   parentid) values (14, 'Jennifer', 'Bailey', 'VP', 'Operations', 9);
+
