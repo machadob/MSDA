@@ -1,0 +1,82 @@
+-- This script is executable. I have used PostgreSQL comments (--) for remarks.
+
+--Q1)
+--http://henrikwarne.com/
+
+--Q2)
+--The ER diagram is uploaded to github. Following is the URL:
+-- https://github.com/machadob/MSDA/blob/ac7e43f230bf4027a6aa968d43407eee8942f186/ER_Diagram_Assign_08.JPG
+
+--Q3) Following are the create table scripts:
+
+-- Uncomment the 4 lines below to drop the tables and start fresh 
+-- drop table if exists blogComment;
+-- drop table if exists postTag;
+-- drop table if exists blogPost;
+-- drop table if exists blogTag;
+
+CREATE TABLE blogPost(
+    postId integer NOT NULL PRIMARY KEY,
+    postName VARCHAR (50) NOT NULL,
+    postDescription VARCHAR (256) NOT NULL,
+    created_on date NOT NULL
+);
+
+CREATE TABLE blogTag(
+    tagId integer NOT NULL PRIMARY KEY,
+    tagName VARCHAR (50) NOT NULL,
+    tagDescription VARCHAR (256) NOT NULL
+);
+
+-- Below is the many-to-many join table between the posts and the tags
+CREATE TABLE postTag(
+    postId integer NOT NULL REFERENCES blogPost (postId),
+    tagId integer NOT NULL REFERENCES blogTag (tagId)
+);
+
+CREATE TABLE blogComment(
+    commentId integer NOT NULL PRIMARY KEY,
+    postId integer REFERENCES blogPost (postId) MATCH SIMPLE,
+    commentator VARCHAR (50) NOT NULL,
+    created_on date NOT NULL    
+);
+
+--Q4) Following are the insert scripts for loading the tables:
+
+insert into blogPost (postId, postName, postDescription, created_on) 
+values (1,'5 Unit Testing Mistakes','Using junit, ad hoc testing etc.', to_date('02-19-2014', 'MM-DD-YYYY'));
+
+insert into blogPost (postId, postName, postDescription, created_on) 
+values (2,'Unit Testing Private Methods','Unit testing private methods', to_date('02-09-2014', 'MM-DD-YYYY'));
+
+insert into blogPost (postId, postName, postDescription, created_on) 
+values (3,'A Response to "Why Most Unit Testing is Waste"','Debating why unit tests are good,or bad', to_date('09-04-2014', 'MM-DD-YYYY'));
+
+
+insert  into blogTag (tagId, tagName, tagDescription) values (1, 'testing', 'Related to Testing including Unit Testing');
+insert  into blogTag (tagId, tagName, tagDescription) values (2, 'unit testing', 'Related to just Unit Testing');
+
+insert into blogComment (commentId, postId, commentator, created_on) values (1, 1, 'Sam Leach', to_date('02-19-2014', 'MM-DD-YYYY'));
+insert into blogComment (commentId, postId, commentator, created_on) values (2, 1, 'Micheal Moser', to_date('02-20-2014', 'MM-DD-YYYY'));
+insert into blogComment (commentId, postId, commentator, created_on) values (3, 1, 'Henrick Warne', to_date('02-20-2014', 'MM-DD-YYYY'));
+insert into blogComment (commentId, postId, commentator, created_on) values (4, 2, 'Lee Dale', to_date('02-10-2014', 'MM-DD-YYYY'));
+insert into blogComment (commentId, postId, commentator, created_on) values (5, 2, 'Kevin Tao', to_date('02-15-2014', 'MM-DD-YYYY'));
+insert into blogComment (commentId, postId, commentator, created_on) values (6, 3, 'James O. Coplien', to_date('09-04-2014', 'MM-DD-YYYY'));
+insert into blogComment (commentId, postId, commentator, created_on) values (7, 3, 'Stuart Buckell', to_date('09-04-2014', 'MM-DD-YYYY'));
+
+insert into postTag (postId, tagId) values(1, 1);
+insert into postTag (postId, tagId) values(1, 2);
+insert into postTag (postId, tagId) values(2, 2);
+insert into postTag (postId, tagId) values(3, 2);
+
+--Q5)
+--   1)
+select bp.postId , bp.postName, bp.postDescription, bp.created_on as "Post created date", bt.tagId, 
+bt.tagName, bt.tagDescription, bc.commentId, bc.commentator, bc.created_on as "Comment created date" 
+from blogPost bp join posttag pt on bp.postId = pt.postId
+left join blogTag bt on bt.tagId = pt.tagId 
+left join blogComment bc on bp.postId = bc.postId;
+
+--   2)
+select bp.postId , bp.postName, bp.postDescription, bp.created_on from blogPost bp join posttag pt on bp.postId = pt.postId
+left join blogTag bt on bt.tagId = pt.tagId where pt.tagId=2
