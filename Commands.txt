@@ -1,0 +1,4 @@
+use unitedstates
+mongoimport  --db unitedstates --collection geodata --type csv --headerline --file C:/Temp/statedata.csv
+mongoimport  --db unitedstates --collection geodata --type tsv --headerline --file C:/Temp/districtdata.txt
+mongoimport  --db unitedstates --collection geodata --type tsv --headerline --file C:/Temp/inhabitedterritorydata.txt

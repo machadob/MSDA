@@ -1,0 +1,84 @@
+QUIZ_9
+
+Q1.	Create a new MongoDB database called employment.
+Answer is as follows:
+use employment
+
+Q2.	Insert a new record for Wendy Yasquez into the database and into a collection called employees.
+Answer is as follows:
+db.employees.insert( { Name: "Wendy Yasquez", Title: "Assistant Professor", Salary: 86000, Department: ["Computer Science"], Hire_Year: 1998 } )
+
+Q3.	Write a JavaScript function to insert new professors into the employees collection.
+Answer is as follows:
+function insertEmployee(
+	Name, Title, Salary, Department, Hire_Year
+	) {
+	db.employees.insert({
+	Name: Name,
+	Title: Title,
+	Salary: Salary,
+	Department: Department,
+	Hire_Year: Hire_Year
+	});
+}
+
+Q4.	Use this function to insert the records for Raoul Dewan, Isabelle Winters, and Jack McDunn.
+Answer is as follows:
+	insertEmployee("Raoul Dewan", "Assistant Professor", 78000, ["Physics", "Biology"], 2009);
+	insertEmployee("Isabelle Winters", "Assistant Professor", 92000, ["Physics"], 1995);
+	insertEmployee("Jack McDunn", "Assistant Professor", 101000, ["Physics"], 1993);
+
+Q5.	Write a JavaScript function to insert new administrative employees into the employees collection.
+Answer is as follows:
+function insertAdminEmployee(
+	Name, Title, Salary, Division, Location, Hire_Year
+	) {
+	db.employees.insert({
+	Name: Name,
+	Title: Title,
+	Salary: Salary,
+	Division: Division,
+	Location: Location,
+	Hire_Year: Hire_Year
+	});
+}
+
+Q6.	Use this function to insert the records for Tonja Baldner and Dennis Bohnet.
+Answer is as follows:
+	insertAdminEmployee("Tonja Baldner", "Assistant to the Dean", 42000, "Arts and Sciences", "", 2001);
+	insertAdminEmployee("Dennis Bohnet", "Vice President", 106500, "Academic Affairs", "Main Campus", 1997);
+
+Q7.	Show the code that will return all employees with salaries less than $90,000.
+Answer is as follows:
+	db.employees.find({ Salary: { $lt: 90000 } })
+
+Q8.	Show the code that will return all professors with salaries less than $90,000.
+Answer is as follows:
+	db.employees.find( {$and: [{ Salary: { $lt: 90000 } }, { Title:{ $regex:".*Professor.*" } } ] })
+
+Q9.	Show the code that will return all Physics professors hired before 2001.
+Answer is as follows:
+	db.employees.find( {$and: [{ Hire_Year: { $lt: 2001 } }, { Title:{ $regex:".*Professor.*" } } ] })
+
+Q10.	Show the code that will return all professors who teach for departments other than Physics. (This should include professors who teach for Physics and also other departments.)
+Answer is as follows:
+db.employees.find( {$and: [{ Department: { $ne: "Physics" } }, { Title:{ $regex:".*Professor.*" } } ] })
+
+Q11.	Show the code that will return all employees who were either hired before 1997 or who have salaries greater than $100,000.
+Answer is as follows:
+db.employees.find( {$and: [{ Hire_Year: { $lt: 2001 } }, { Salary:{ $gt: 100000 } } ] })
+
+Q12.	Suppose Tonja Baldner has been given a 10% raise. Show the code that will update her salary correctly.
+Answer is as follows:
+db.employees.update( {Name: "Tonja Baldner"}, {$set: {"Salary" : 46200} } )
+
+Q13.	Professor Dewan has been offered a job at another university. Show the code that would remove his record from the database.
+Answer is as follows:
+db.employees.remove( {Name: "Raoul Dewan"})
+
+Q14.	Instead of removing Professor Dewan’s record, we might prefer to create a new collection called pastemployees and move his record there. Show the code that will move his record to the new collection and add a departyear value of 2014 to his record. (You can do it in two steps.)
+Answer is as follows:
+insertEmployee("Raoul Dewan", "Assistant Professor", 78000, ["Physics", "Biology"], 2009);
+db.pastemployees.save( db.employees.find( {Name: "Raoul Dewan"}).toArray() )
+db.employees.remove( {Name: "Raoul Dewan"})
+db.pastemployees.update( {Name: "Raoul Dewan"}, { $set:{ "departyear": 2014 } } )
