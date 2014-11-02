@@ -1,0 +1,46 @@
+Week 10 Quiz
+
+
+Instructions
+This week, we continue our work in MongoDB. In this quiz, you will work through the basic skills of aggregation in MongoDB.
+For each question, your task is to show the code (either in your shell or in the MongoDB command line) to accomplish each task. Place your answers in either a text or PDF file. For convenience, this assignment is provided in plain text, as a Word Document, and as a PDF file. Feel free to insert your answers into our document or to create your own as you prefer.
+This quiz is due by Sunday, November 2, 2014 at 11:59 p.m. EDT.
+
+Preliminaries
+The data we will work with come from the MongoDB documentation site. You can find the zip code data at the following URL:
+http://media.mongodb.org/zips.json
+Save the data to your machine and make note of the location. Load the data using the mongoimport utility. For instance, on a PC you might have:
+mongoimport -- collection zips -- file c:\my\path\goes\here\zips.json
+On a Mac you would have:
+mongoimport -- collection zips -- file /my/path/goes/here/zips.json
+If you’re running Linux you probably don’t need help, but it’ll essentially be the same as for the Mac! The only real difference across all three environments is how you specify the file location.
+The material in Day 2 of chapter 5 of Seven Databases in Seven Weeks introduces aggregation. In addition, there is a hands-on tutorial (posted Tuesday, October 28) on aggregation that will help prepare you for this quiz. Finally, the help files at the MongoDB documentation site are really quite good for aggregation:
+http://docs.mongodb.org/manual/aggregation/
+
+
+
+1.	Which states have populations less than eight million?
+
+db.zips.aggregate( { $group :
+                         { _id : "$state",
+                           population : { $sum : "$pop" } } },
+                       { $match : {population : { $lt : 8*1000*1000 } } } )
+
+2.	What is the fifth largest city in New York?
+
+
+db.zips.aggregate( { $group:
+                         { _id: { state: "$state"},
+                           pop: { $sum: "$pop" } } },
+                       { $sort: { pop: -1 } },
+                       { $limit : 5 },
+                       { $group:
+                         { _id : "$_id.state",
+                           pop:  { $sum: "$pop" } } }, { $limit : 1 })
+                           
+3.	What is the total number of cities in each state according to this data set?
+
+db.zips.aggregate( { $group :
+                         { _id : "$state",
+                           cities : { $sum : 1 } } } ) 
+
