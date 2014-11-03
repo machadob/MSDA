@@ -1,0 +1,33 @@
+Week 10 Quiz
+
+# Below is the command that I used to import the zips data.
+# mongoimport  --db zips --collection zips --file c:\Temp\zips.json
+
+#To switch to the zips db use the following command
+#use zips
+
+1.	Which states have populations less than eight million?
+
+db.zips.aggregate( { $group :
+                         { _id : "$state",
+                           population : { $sum : "$pop" } } },
+                       { $match : {population : { $lt : 8*1000*1000 } } } )
+
+2.	What is the fifth largest city in New York?
+
+db.zips.aggregate( 	{$match: {state:"NY"}},
+			{ $group:
+                         { _id: { state: "$state", city: "$city" },
+                           pop: { $sum: "$pop" } } },
+                       { $sort: { pop: -1 } },
+                       { $limit : 5 },
+                        { $group:
+		           { _id : "$_id.state",
+		              fifth_biggest_city:  { $last: "$_id.city" } } })  
+                           
+3.	What is the total number of cities in each state according to this data set?
+
+db.zips.aggregate( { $group :
+                         { _id : "$state",
+                           cities : { $sum : 1 } } } ) 
+
