@@ -1,0 +1,15 @@
+var mapFunction = function() {
+                       emit(this.state, this.pop);
+                   };
+                   
+var reduceFunction = function(keyState, valuesPop) {
+                          return Array.sum(valuesPop);
+                      };
+                      
+db.zips.mapReduce(
+                     mapFunction,
+                     reduceFunction,
+                     { out: "state_pop" }
+                   );
+                   
+db.state_pop.find();                   
