@@ -1,0 +1,280 @@
+
+1) USE CASE:
+I am using a data set that describes transactions for a retail shop. It is a subset of the Northwind database that is included with some Microsoft products as an example data set. The main entity in this dataset is an Order which is in turn composed of OrderDetails (line items). Each Order also has information about the Customer for whom the Order was fulfilled. An OrderDetail contains information about the each item in a particular Order like Product name, the Price, and Quantity. The Product and Customer are separate entities in this data set.
+The use case addressed by the data set is to get the total quantity of products sold, grouped by the Country, City, Customer and Product name. The data is available in separate files and is normalized, so there is a need to join the various files to get the final result.  
+
+Please refer to the Appendix at the end of  the report for a detailed explanation of the Data set, and how to load it into the various environments.
+
+2) Advantages and Disadvantages of the various technologies:
+R:
+Though R is not a database system (it is a language), it does have some in-memory data storage and manipulation capabilities.
+Following are some advantages of using R.
+a) R pulls all the data into memory and gives a programmatic way for manipulating the data. 
+b) You get a first class programming environment and visualization engine. 
+c) R also provides many packages to melt and reshape data. 
+d) R also does not need one to pre-create a schema. You can just load a file into a dataframe and optionally use the header in the file for naming the columns in the data frame. 
+e) Manipulation of data in R can be fast since it is in memory.
+
+Following are some disadvantages of using R.
+a) The amount of data that R can process is mostly limited by the RAM in the machine. Though intermediate data can be written to disk, it becomes a chore to handle and manipulate that data.
+b) One of the issues with R is that we need to do much more data processing if we need to do complex joins between two or more data frames as was the case with this use case. These types of joins are very natural with an RDBMS for example.
+c) R does not have transactions built into it. You can programatically implement transactions though.
+d) R does not support big-data paradigms like Map_Reduce across clusters.
+
+PostgreSQL:
+Following are some advantages of using PostgreSQL.
+a) It lends itself well for running ad-hoc queries and complex joins. This enables one to sometimes directly get an answer just using SQL instead of writing a complex program. This is arguably the most important advantage of an RDBMS over other technologies.
+b) It supports transactions natively. This is more important when running in OLTP (On Line Transaction Processing) mode than when running queries for analytics.
+c) You can avoid data duplication using normalization of data. Data normalization is very well supported at the deepest level in RDBMS technology.
+d) You can connect to PostgreSQL from most of the popular languages like C, C++, JAVA, Python, R etc.
+e) There are a lot of skilled developers available for an RDBMS.
+f) You can transfer most of your SQL skills from one RDBMS to another.
+
+Following are some disadvantages of using PostgreSQL.
+a) Is not designed from grounds up to run on cheap machine clusters. This makes it very expensive when dealing with large sizes of data and huge processing loads.
+b) Does not support rich data structures. Other data technologies support rich and deeply nested structures. It does support a BLOB type, but that is monolithic type with a specialized structure.
+c) Does not support a programming language directly. If you have to write a program that uses SQL, you either have to write a stored procedure or program in a third party language.
+d) The most glaring disadvantage of PostgreSQL is that, like other RDBMS systems, it does not handle large amounts of data storage and processing without suffering in performance.
+
+
+MongoDB:
+Following are some advantages of using MongoDB.
+a) It is schemaless. The structure of the document does not have to be known in Advance. This statement is not fully true, because you still have to know the structure of the document in order to work with it. Anyways, it does not require a explicit schema.
+b) MongoDB supports very rich data structures with deep nesting that can represent real objects, unlike an RDBMS which has a very flat structure.
+c) MongoDB scales well with increasing data. MongoDB is designed to run on cheap commodity hardware clusters so that enormous amounts of data can be stored and processed on a system running MongoDB.
+d) Though MongoDB does not support joins natively, it does have a very dynamic document-based query language that is very powerful.
+e) MongoDB is designed from grounds up for Sharding of data across multiple machines and to enable load balancing.
+f) MongoDB has native support for the Map-Reduce paradigm. The architecture is designed from grounds up to support that aspect. Coupled with the use of cheap clusters, it becomes a very good choice for processing large amounts of data.
+
+Following are some disadvantages of using MongoDB.
+a) If you want to run ad-hoc queries with complex joins it is not possible out of the box. This can still be done, but at the expense of development and processing time.
+b) MongDB does not support transactions. If you are concerned about integrity of your data in MongoDB, you will have to manually create	a transaction and commit it or rollback it back manually.
+c) The memory usage of a MongoDB database is typically higher than a RDBMS because of the need to store key names within each document and also because a lot of data can get duplicated across different documents. This is because there are no explicitly defined relationships between documents and also because data has to be duplicated sometimes for performance reason (again to avoid programmatic joins).
+d) Another issue with MongoDB is that it is a relatively new data technology and hence there are not as many skilled developers available as compared to say an RDBMS.
+In our use case we need a complex join across multiple tables and hence needed to massage the data prior to running the analytics. It was not easy to use the raw data as is.
+
+3)Technology recommended for this use case:
+I would recommend PostgreSQL for this particular use case with certain caveats. This is a relatively small data set and is in a very normalized form. This is the kind of data that is naturally suited for a RDBMS. Though an RDBMS does require a schema, in the case of this dataset the schema design is simplified because each data file neatly maps to a table. Once the schema is created and the data is loaded, the execution of complex joins is very easy with an RDBMS. In this case, we did not not really have to massage the data when it was loaded. We just executed one SQL statement (see the Appendix) to get the final result. Also, we can imagine other types of joins which would be as easy and useful. So in this case the relational schema was really appropriate.
+It is a different story when this type of schema is used in a very popular web store, where there are hundreds of millions of customers. The RDBMS may not be able to handle that amount of data and the performance may suffer to an extent that it becomes unacceptable. In that case MongoDB would be a good storage option. Also, MongoDB can scale horizontally using commodity hardware, so it would really be the only choice amongst these three if we were dealing with big data processing.
+
+
+--------- APPENDIX: ---------
+
+Much of the structure of the data  can be gleaned from the files,  SQL and Source code.
+The data set basically revolves around Orders and OrderItems (or OrderDetails). Each Order consist of multiple order items (OrderDetails) and each order item has information about the Product, Quantity, Customer etc.
+Though the data set is in multiple files, it is already normalized and could have been denormalized for loading into non-relational databases like MongoDB. It is well suited for loading into an RDBMS like PostGreSQL though.
+
+Data Set: I have used the famed Northwind database that has traditionally been provided with Microsoft database products as an example database. I loaded this database into SQL Server and exported the following tables as csv files to use in this project.
+
+Table "Orders" exported to the file "Orders.csv"
+Table "OrderDetails" exported to the file "OrderDetails.csv"
+Table "Products" exported to the file "Products.csv"
+Table "Customers" exported to the file "Customers.csv"
+Table "Employees" exported to the file "Employees.csv"
+
+I have truncated a few columns (like those containing address details) from some tables that were not necessary for the project.
+I have provided these cleaned up files in a zip format on github. The URL is as follows. 
+https://github.com/machadob/MSDA/blob/9ca2075e3545a1f64d66253595a4cd080c48ef3d/Orders_DB.zip
+
+Following is a brief description of the tables:
+OrderDetails: This table contains details about each orderItem including the productId, Unit price, Quantity and Discount.
+Orders: This table has information for the CustomerId, EmployeeId and Order date for each order.
+Products:  This table contains the Product details for each product like the Name, Price etc.
+Customers: This table contains the Customer details. It contains the CustomerId, Name, Address etc for each Customer.
+Employees: This table contains the Employee details for each Employee. ( This table is not currently used in our use case)
+
+These files were loaded into the three tools (PostgreSQL, R and Mongodb) as follows:
+
+------------ Loading data into PostgreSQL: ------------
+	There were two stages, Create tables and Load Tables as follows.
+	
+1) Create tables: The SQL statements are as follows.
+
+	DROP TABLE IF EXISTS Orders;
+	CREATE TABLE Orders
+	(
+	  OrderID integer NOT NULL,
+	  CustomerID character varying(50) NOT NULL,
+	  EmployeeID integer NOT NULL,
+	  OrderDate Date,
+	  CONSTRAINT Orders_pkey PRIMARY KEY (OrderID)
+	);
+
+	DROP TABLE IF EXISTS OrderDetails;
+	CREATE TABLE OrderDetails
+	(
+	  OrderID integer NOT NULL,
+	  ProductID integer NOT NULL,
+	  UnitPrice numeric,
+	  Quantity integer,
+	  Discount numeric
+	);
+
+	DROP TABLE IF EXISTS Products;
+	CREATE TABLE Products
+	(
+	  ProductID integer NOT NULL,
+	  ProductName character varying(50) NOT NULL,
+	  QuantityPerUnit character varying(50) NOT NULL,
+	  UnitPrice numeric,
+	  UnitsInStock integer,
+	  UnitsOnOrder integer,
+	  CONSTRAINT Products_pkey PRIMARY KEY (ProductID)
+	);
+
+	DROP TABLE IF EXISTS Employees;
+	CREATE TABLE Employees
+	(
+	  EmployeeID integer NOT NULL,
+	  LastName character varying(50) NOT NULL,
+	  FirstName character varying(50) NOT NULL,
+	  Title character varying(50),
+	  Address character varying(50),
+	  City character varying(50),
+	  Region character varying(50),
+
+	  CONSTRAINT Employees_pkey PRIMARY KEY (EmployeeID)
+	);
+
+	DROP TABLE IF EXISTS Customers;
+	CREATE TABLE Customers
+	(
+	  CustomerID character varying(50) NOT NULL,
+	  CompanyName character varying(50) NOT NULL,
+	  ContactName character varying(50) NOT NULL,
+	  ContactTitle character varying(50),
+	  Address character varying(50),
+	  City character varying(50),
+	  Region character varying(50),
+	  PostalCode character varying(50),
+	  Country character varying(50),
+	  Phone character varying(50),
+	  Fax character varying(50),
+	  CONSTRAINT Customers_pkey PRIMARY KEY (CustomerID)
+	);
+	
+2) Load the csv files into the tables using the following commands from a PostgreSQL command line console.
+	(Note: I am assuming the files are in "C:/Temp/Orders folder".)
+	
+	\COPY Orders FROM 'C:/Temp/Orders/Orders.csv' DELIMITER ',' CSV HEADER;
+	\COPY OrderDetails FROM 'C:/Temp/Orders/OrderDetails.csv' DELIMITER ',' CSV HEADER;
+	\COPY Products FROM 'C:/Temp/Orders/Products.csv' DELIMITER ',' CSV HEADER;
+	\COPY Employees FROM 'C:/Temp/Orders/Employees.csv' DELIMITER ',' CSV HEADER;
+	\COPY Customers FROM 'C:/Temp/Orders/Customers.csv' DELIMITER ',' CSV HEADER;
+
+Following is the SQL used to implement the use case:
+
+select c.country, c.city, c.customerid, p.productname, sum(od.quantity) TotalQty
+from Orders o 
+join OrderDetails od on o.orderid=od.orderid 
+join Customers c on o.customerid=c.customerid
+join Products p on od.productid=p.productid
+group by c.country,c.city, c.customerid, p.productname
+order by c.country
+
+---------- Loading data into R: ----------
+	The files were loaded into R dataframes and then a single "denormalized" data frame was
+	created and saved to a file. This dataframe is sort of a join between all the individual
+	data frames ad can be used for the usecase described above. 
+	All the R code is as follows:
+	
+#---------------------------     START R CODE     ------------------------------------
+
+library(plyr)
+
+#Read the files into seperate data frames
+orders = read.csv("C:/Temp/Orders/Orders.csv", header = TRUE, stringsAsFactors=FALSE)
+orderDetails = read.csv("C:/Temp/Orders/OrderDetails.csv", header = TRUE, stringsAsFactors=FALSE)
+products = read.csv("C:/Temp/Orders/Products.csv", header = TRUE, stringsAsFactors=FALSE)
+customers = read.csv("C:/Temp/Orders/Customers.csv", header = TRUE, stringsAsFactors=FALSE)
+employees = read.csv("C:/Temp/Orders/Employees.csv", header = TRUE, stringsAsFactors=FALSE)
+
+#Create empty vectors to store the various columns of interest from each file.
+CountryList=c()
+CityList=c()
+CustomerIdList=c()
+ProductNameList=c()
+QuantityList=c()
+DiscountList=c()
+
+#The following loop will run through each order item and get all the necessary attributes
+# into its respective list after which we will create a new "denormalized" data frame.
+for(i in 1:nrow(orderDetails)){
+  ProductName = products[orderDetails[i,"ProductID"],]$ProductName
+  custid = orders[orders$OrderID==orderDetails[i,"OrderID"],]$CustomerID
+  CountryList<-c(CountryList, customers[customers$CustomerID==custid,]$Country)
+  CityList<-c(CityList, customers[customers$CustomerID==custid,]$City)
+  CustomerIdList<-c(CustomerIdList, custid)
+  ProductNameList<-c(ProductNameList, ProductName)
+  QuantityList<-c(QuantityList, orderDetails[i,"Quantity"])
+  DiscountList<-c(DiscountList, orderDetails[i,"Discount"])
+}
+#Create the new "denormalized" data frame.
+ordersDF<-data.frame(Country=CountryList, City=CityList, CustomerId=CustomerIdList, ProductName=ProductNameList, Quantity=QuantityList, Discount=DiscountList)
+
+#The Result data frame below contains the aggregate quatity grouped by Country, City ans Customer.
+TotalQtyDF<-ddply(ordersDF, c('Country','City','CustomerId','ProductName'), function(x)c(TotalQty=mean(x$Quantity)))
+
+#Save the new dataframe in a .RData file.
+save(ordersDF, file = "c:/Temp/orders.RData")
+#Write the processed data to a new csv to read into mongodb later.
+write.csv(ordersDF, "c:/Temp/orders.csv")
+#Load it back using the command below(Commented)
+#load(file = "c:/Temp/orders.RData")
+
+#---------------------------     END R CODE     ------------------------------------
+
+Following is the console output describing some of the important data structures used in the R code:
+> head(orders,2)
+  OrderID CustomerID EmployeeID  OrderDate
+1   10248      VINET          5 1996-07-04
+2   10249      TOMSP          6 1996-07-05
+
+> head(orderDetails,2)
+  OrderID ProductID UnitPrice Quantity Discount
+1   10248        11      14.0       12        0
+2   10248        42       9.8       10        0
+
+> head(products,2)
+  ProductID ProductName    QuantityPerUnit UnitPrice UnitsInStock UnitsOnOrder
+1         1        Chai 10 boxes x 20 bags        18           39            0
+2         2       Chang 24 - 12 oz bottles        19           17           40
+
+> head(customers,2)
+  CustomerID                        CompanyName  ContactName         ContactTitle                        Address         City Region PostalCode Country
+1      ALFKI                Alfreds Futterkiste Maria Anders Sales Representative                  Obere Str. 57       Berlin   NULL      12209 Germany
+2      ANATR Ana Trujillo Emparedados y helados Ana Trujillo                Owner Avda. de la Constitución 2222 México D.F.   NULL       5021  Mexico
+         Phone          Fax
+1  030-0074321  030-0076545
+2 (5) 555-4729 (5) 555-3745
+
+The final massaged data frame is as follows:
+> head(ordersDF,2)
+  Country  City CustomerId                   ProductName Quantity Discount
+1  France Reims      VINET                Queso Cabrales       12        0
+2  France Reims      VINET Singaporean Hokkien Fried Mee       10        0
+
+This is the dataframe that is exported to a csv file that will later be imported into MongoDB.
+
+--------- Loading data into MongoDB: ----------
+	All The data files could be loaded into a single MongoDB collection using the following statements on the mongodb console:
+	
+	mongoimport  --db ordersdb --collection orders --type csv --headerline --file C:/Temp/Orders/Orders.csv
+	mongoimport  --db ordersdb --collection orders --type csv --headerline --file C:/Temp/Orders/OrderDetails.csv
+	mongoimport  --db ordersdb --collection orders --type csv --headerline --file C:/Temp/Orders/Products.csv
+	mongoimport  --db ordersdb --collection orders --type csv --headerline --file C:/Temp/Orders/Customers.csv
+	mongoimport  --db ordersdb --collection orders --type csv --headerline --file C:/Temp/Orders/Employees.csv
+	
+	The joins required for the above collection of documents would require some complex manipulation within MongoDB, So i decided to output a more usable "denormalized" version of the files using R code. I have included a comment in the R program earlier in this Appendix to mark the line of code where I export this file. I stored the processed R dataframe in a csv and then loaded it into the MongoDB database using the following command at the console:
+	
+	mongoimport  --db ordersdb --collection orders --type csv --headerline --file C:/Temp/Orders.csv
+
+Following is the structure of one MongoDB record:
+{ "_id" : ObjectId("546014706388a04d036454cb"), "" : 17, "Country" : "Brazil", "City" : "Rio de Janeiro", "Custome
+Id" : "HANAR", "ProductName" : "Maxilaku", "Quantity" : 40, "Discount" : 0 }
+
+ The MongoDB code for the use case is as follows:
+
+db.orders.aggregate( { $group:
+                     { _id: { Country: "$Country", City: "$City", City: "$CustomerId", ProductName: "$ProductName" },
+                       Quantity: { $sum: "$Quantity" } } })
