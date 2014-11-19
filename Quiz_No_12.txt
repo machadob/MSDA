@@ -1,0 +1,41 @@
+-----------(1)
+I have broken the courses file into two files. One for Completed courses and one for Enrolled. I also created a seperate file with the Dormitory information.
+The R code below was used for the purpose.
+
+df <- read.csv("c:/tmp/week-12-quiz-data-courses.csv", header=TRUE)
+inProcess_df<-df[df$Grade=='IP',]
+completed_df<-df[!(df$Grade=='IP'),]
+write.csv(inProcess_df, file = "c:/tmp/inProcess.csv",row.names=FALSE, quote=FALSE)
+write.csv(completed_df, file = "c:/tmp/completed.csv",row.names=FALSE, quote=FALSE)
+
+dfs<-read.csv("c:/tmp/week-12-quiz-data-students-and-housing.csv", header=TRUE)
+domdf<-data.frame(Dormitory = dfs$Dormitory, Room=  dfs$Room)
+domdf<-unique(domdf)
+write.csv(domdf, file = "c:/tmp/dormitories.csv", row.names=FALSE, quote=FALSE)
+
+The Following code was used to load the neo4j database
+
+load csv with headers from "file:C:/tmp/week-12-quiz-data-students-and-housing.csv" as students create (s: Student {ID:students.ID, GivenName:students.GivenName, Surname:students.Surname, Gender:students.Gender, StreetAddress:students.StreetAddress, City:students.City, State:students.State, ZipCode:students.ZipCode, TelephoneNumber:students.TelephoneNumber, Dormitory:students.Dormitory, Room:students.Room})
+
+load csv with headers from "file:C:/tmp/inProcess.csv" as ipcs create (i: IPC {ID:ipcs.ID,CourseDept:ipcs.CourseDept, CourseNumber:ipcs.CourseNumber, CourseName:ipcs.CourseName})
+
+load csv with headers from "file:c:/tmp/completed.csv" as comps create (c: Comp {ID:comps.ID,CourseDept:comps.CourseDept, CourseNumber:comps.CourseNumber, CourseName:comps.CourseName})
+
+load csv with headers from "file:C:/tmp/dormitories.csv" as dormitorys create (d: Dormitory {Dormitory:dormitorys.Dormitory, Room:dormitorys.Room})
+
+load csv with headers from "file:C:/tmp/week-12-quiz-data-students-and-housing.csv" as students match (s1: Student {ID:students.ID}),(d1:Dormitory{Room:students.Room}) create(s1) - [r:Housed{Room:students.Room}]-> (d1)
+
+load csv with headers from "file:C:/tmp/inProcess.csv" as ipcs  match (i: IPC {ID:ipcs.ID}),(s1:Student{ID:ipcs.ID}) create(s1) - [r:Enrolled {Grade:ipcs.Grade, Section:ipcs.Section, Instructor:ipcs.Instructor}]-> (i)
+
+load csv with headers from "file:C:/tmp/completed.csv" as comp match (c: Comp {ID:comp.ID}),(s1:Student{ID:comp.ID}) create(s1) - [r:Completed {Grade:comp.Grade, Section:comp.Section, Instructor:comp.Instructor}]-> (c)
+
+-------------(2)
+
+This problem could be solved using a relational database. The Student information is in a separate file with unique Ids for each student. We could create a Students table out of this file. The other file with the course information can be loaded into a table called Courses and can be joined with the Student table on the ID. These tables could also be further normalized so that the Address and Dormitory information for the students can go into its own table. For this example, the RDBMS solution could yield all the answers without very complex joins. Since the interrelationships in this data is not very complicated, and since the nesting of the relationships is not very deep, we will not have to worry about tables which have a relationship tree which is very deep. We are talking about 2 to 3 level of depth for the tables. This will keep the joins to select/modify data very simple. The data is obviously very small, so we do not need any of the other advantaged of a graph database like massive processing capabilities and speed. So I think for this particular example an RDBMS would be the right choice.
+
+--------------(3)
+match (s:Student{GivenName:'Richard'})-[r:Housed]-(d:Dormitory)-[r1:Housed]-(s1:Student) return s1
+
+--------------(4)
+match (s:Student{GivenName:'Richard'})-[e:Enrolled]-(i:IPC{CourseName:'Finite Mathematics'}) set e.Grade='B'
+
