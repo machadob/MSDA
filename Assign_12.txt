@@ -1,0 +1,56 @@
+--------- Use case --------- 
+The use case is based on a computer network in an organization. There are client and server machines within a network. Each machine has various hardware specs. The client machines are connected to the servers. Each machine is also used by specific users. When we load the data about the network into a graph database we can run various queries to find which machines connect to a server, find which users connect to the server through the client machines, who is permissioned to log into the server etc. This is a simplified scenario. In the real world, we will have multiple servers, multiple subnets and many more clients.
+
+I have uploaded a jpeg image depicting the topology of the network. The github URL for the image is as follows:
+
+https://raw.githubusercontent.com/machadob/MSDA/1653d9cd3c7f3d23f00815e1637277c2a82beba9/Topology.jpg
+
+
+---------  Nodes, Relationships and Attributes ---------
+Nodes: 
+	The Nodes are the computers (client and server) and the Users.
+Relationships:
+	There are two types of relationships: 1) ConnectsTo (Between the clients and the server) 2) Uses (Between the Users and the Machines)
+	The relationships have the IP Addresses of the connected to machines as properties.
+Attributes:
+	The Machines have the following attributes: IP Address, Manufacturer, Memory in Gigabytes, CPU speed in GHZ, Location Code, Type (client or server)
+	The Users have the following attributes: user Id,First Name,Last Name, Title,EmpType
+	
+
+---------- DATA ----------
+The data files are in github. I have two csv files, machines.csv and employees.csv. Following are the github URLs for the files.
+
+https://raw.githubusercontent.com/machadob/MSDA/1653d9cd3c7f3d23f00815e1637277c2a82beba9/employees.csv
+https://raw.githubusercontent.com/machadob/MSDA/master/machines.csv
+
+# The Following code was used to load the neo4j database and create nodes.
+
+load csv with headers from "file:C:/tmp/machines.csv" as machines create (m: Machine {userId:machines.userId, ipAddress:machines.ipAddress, manufacturer:machines.manufacturer, memoryGB:machines.memoryGB, cpuSpeedGHZ:machines.ipAddress, locationCode:machines.locationCode, type:machines.type})
+
+load csv with headers from "file:C:/tmp/employees.csv" as employees create (e: Employee {userId:employees.userId, firstName:employees.firstName, lastName:employees.lastName, title:employees.title, empType:employees.empType})
+
+-------- CREATE Relationships (Users to Machines)  ---------
+load csv with headers from "file:C:/tmp/machines.csv" as machines match (m: Machine {userId:machines.userId}),(e:Employee{userId:machines.userId}) create(e) - [r:Uses{ipAddress:machines.ipAddress}]-> (m)
+
+------- CREATE the client server relationships manually---------
+
+match (m1: Machine {ipAddress:'192.168.1.2'}),(m2:Machine{ipAddress:'192.168.1.50'}) create(m1) - [r:ConnectsTo{ipAddress:'192.168.1.50'}]-> (m2)
+match (m1: Machine {ipAddress:'192.168.1.3'}),(m2:Machine{ipAddress:'192.168.1.50'}) create(m1) - [r:ConnectsTo{ipAddress:'192.168.1.50'}]-> (m2)
+match (m1: Machine {ipAddress:'192.168.1.4'}),(m2:Machine{ipAddress:'192.168.1.50'}) create(m1) - [r:ConnectsTo{ipAddress:'192.168.1.50'}]-> (m2)
+match (m1: Machine {ipAddress:'192.168.1.5'}),(m2:Machine{ipAddress:'192.168.1.50'}) create(m1) - [r:ConnectsTo{ipAddress:'192.168.1.50'}]-> (m2)
+
+------ QUERIES -------
+
+# Find all CLIENT MACHINES that connect to the SERVER.
+
+match (m1:Machine)-[r:ConnectsTo]-(m2:Machine{ipAddress:'192.168.1.50'}) return m1
+
+# Find all EMPLOYEES who use the CLIENT MACHINES to connect to the SERVER
+
+match (e1:Employee)-[u:Uses]-(m1:Machine)-[r:ConnectsTo]-(m2:Machine{ipAddress:'192.168.1.50'}) return e1
+
+# Find EMPLOYEES who have permissions to log in to the SERVER
+
+match (e1:Employee)-[u:Uses]-(m2:Machine{ipAddress:'192.168.1.50'}) return e1
+
+	
