@@ -1,0 +1,6 @@
+userId,firstName,lastName,title,empType
+1,John,Smith,analyst,permanent
+2,Jane,Reilly,programmer,consultant
+3,Pete,Chung,DBA,employee
+4,Mary,Ann,programmer,consultant
+5,Jake,Walt,sysAdmin,employee
