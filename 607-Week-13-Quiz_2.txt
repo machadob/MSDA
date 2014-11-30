@@ -1,0 +1,37 @@
+
+drop table if exists employees;	
+
+CREATE TABLE employees
+(
+  SSN character varying(50) NOT NULL,
+  firstname character varying(50) NOT NULL,
+  lastname character varying(50) NOT NULL,
+  title character varying(50),
+  CONSTRAINT employees_pkey PRIMARY KEY (SSN)
+);
+
+insert into employees values('435-637-9876',   'John',   'Willis',   'Analyst');
+insert into employees values('324-453-9855',   'Mary',   'Smith',   'Support');
+insert into employees values('857-645-8478',   'Ian',   'Walker',   'Programmer');
+insert into employees values('756-435-3245',   'Allan',   'Border',   'Support');
+
+-- Function: updateEmployees(character, character, character, character)
+
+CREATE OR REPLACE FUNCTION updateEmployees(IN p_ssn character, IN p_firstname character, IN p_lastname character, IN p_title character)
+  RETURNS void AS
+$BODY$
+	BEGIN
+	IF EXISTS (SELECT 1 FROM employees WHERE SSN = p_ssn) THEN
+		update employees set firstname=p_firstname, lastname=p_lastname, title=p_title where SSN=p_ssn;
+	ELSE
+		insert into employees values(p_ssn, p_firstname, p_lastname, p_title);
+	END IF;
+	END
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION updateEmployees(character, character, character, character)
+  OWNER TO postgres;
+  
+select  updateEmployees('435-637-9876', 'Burton', 'Machado', 'Analyst');  -- Upadte firstname, lastname and title of Existing employee based on SSN
+select  updateEmployees('123-637-9876', 'John', 'Smith', 'Trader');       -- Add New Employee based on SSN
