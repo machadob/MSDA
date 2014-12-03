@@ -1,0 +1,65 @@
+
+------ PART 1 ------
+
+I will be using the DVD rental database that comes with PostgreSQL. The sample database can be loaded using the instructions at the following links.
+http://www.postgresqltutorial.com/postgresql-sample-database/
+http://www.postgresqltutorial.com/load-postgresql-sample-database/
+
+I Will be using the following three tables from this database for the project:
+1) film (The Table containing films)
+2) actor (The Table containing actors who act in the films)
+3) film_actor (A many-to-many join Table for the above two tables)
+
+------ PART 2 ------
+
+We will output three csv files from this database as follows. These files will not contain all the records from the original database, but will contain a smaller filtered subset. I have included the SQL and Command line version of commands to create these files.
+
+Note: You will need to create the C:/tmp folder on your machine if it does not exist.
+1) film_shortened.csv : To create this file, we will  limit the number of films in the film Table to 10. We just take the first 10 films ordered by film_id.
+-- SQL: Use the following SQL and save the results to the csv using the Export menu item from the File menu in the PostgreSQL query tool.
+select * from film  order by film_id limit 10;
+-- Command Line version: You can also directly create the csv file from the PostgreSQL command line using the following command.
+Copy (select * from film  order by film_id limit 10) To 'C:/tmp/film_shortened.csv' With CSV HEADER;
+
+2) actor_shortened.csv : To create this file, we get the film_ids for the 10 films above and find the actors for those films.
+-- SQL: Use the following SQL and save the results to the csv using the Export menu item from the File menu in the PostgreSQL query tool.
+select * from actor where actor_id in (select  actor_id from film_actor where film_id in (select film_id from film  order by film_id limit 10));
+-- Command Line version: You can also directly create the csv file from the PostgreSQL command line using the following command.
+Copy (select * from actor where actor_id in (select  actor_id from film_actor where film_id in (select film_id from film  order by film_id limit 10))) To 'C:/tmp/actor_shortened.csv' With CSV HEADER;
+
+3) film_actor_shortened.csv: To create this file, we find all the matching records in the film_actor tables for the 10 films and the corresponding actors.
+-- SQL: Use the following SQL and save the results to the csv using the Export menu item from the File menu in the PostgreSQL query tool.
+select film_id, actor_id from film_actor where film_id in (select film_id from film  order by film_id limit 10));
+-- Command Line version: You can also directly create the csv file from the PostgreSQL command line using the following command.
+Copy (select film_id, actor_id from film_actor where film_id in (select film_id from film  order by film_id limit 10)) To 'C:/tmp/film_actor_shortened.csv' With CSV HEADER;
+
+The above shortened files are also available in github:
+
+
+# Commands to load the above three files into Neo4j.
+#Load the films:
+load csv with headers from "file:C:/tmp/film_shortened.csv" as movies create (m:Movie {film_id: movies.film_id, title: movies.title, description: movies.description})
+
+#Load the actors
+load csv with headers from "file:C:/tmp/actor_shortened.csv" as actors create (m:Actor {actor_id: actors.actor_id, first_name: actors.first_name, last_name: actors.last_name, last_update: actors.last_update})
+
+#Create the relationships
+load csv with headers from "file:C:/tmp/film_actor_shortened.csv" as film_actors match (m: Movie {film_id: film_actors.film_id}),(a:Actor {actor_id: film_actors.actor_id}) create (a) -[r:acts_in]-> (m)
+
+------ PART 3 ------
+
+#Report all actors from movie "Academy Dinosaur"
+match (a:Actor)-[d:acts_in]-(m:Movie {title: 'Academy Dinosaur'}) return a
+
+#Reports all actors that acted in movies "Academy Dinosaur" and "Alabama Devil"
+match (a1:Actor)-[d1:acts_in]-(m1:Movie {title: 'Academy Dinosaur'})-->(aa)-[d2:acts_in]-(m1:Movie {title: 'Academy Dinosaur'}) return aa
+
+Return all flights that run from Detroit to Atlanta.
+match (b:Airport {label: 'ATL'})-[r:Arrives]-(f:Flight)-[d:Departs]-(a:Airport {label: 'DTW'}) return f
+
+match (a) optional match (a)-[r]-() delete a,r
+
+------ PART 4 ------
+The advantage of using Neo4j over RDBMS is that if we need to add more entities (nodes) or attributes (properties) to the database, we can add it without changing the schema, which is not the case with an RDBMS. Also, with Neo4j we can go deeper in terms of relationships without adding much complexity in terms of ease of use and performance. A very deep tree-like relationship in an RDBMS can add result in joins that are very complex and difficult to manage and the performance of these joins can be very poor depending on the indexing and the RDBMS engine itself.
+The advantage of using RDBMS in this particular case is that we can select and filter on almost any column in any of the tables using just one SQL query. 
+
