@@ -1,0 +1,31 @@
+
+1) Downloading the data files:
+The number of months from 2007 to 2014 is 84
+The 2007 data is only for the month of december so the number of months is ~ 73
+For 16 months we have 650 GB of data
+That is 650/16 = 40 GB per month
+for 73 months we have 40*73 = 2920 GB ~ 3TB
+A machine which is connected to the internet through DSL can download 1 GB in about an hour.
+To download 3TB it will take 3*1000 = 3000 hours = 125 Days
+125 days is the best case scenario because we not have a single zip file available, we have to download multiple zip files. The upside to this is that we could download a few of them at a time in parallel, which should give us a little more efficiency. But we will be unzipping a lot of files which will add overheads. Let us assume that these two effects will cancel each other.
+
+2) Unzipping the data files:
+The data is in seperate zip files. For each month there are about 740 files
+for 73 months there will be 740 * 73 = 54020 files
+These files could potentially be unzipped in parallel.
+if we unzip 10 files in parallel we will have to calculate the time for unzipping 54020/10 =5402 ~ 5400 files
+each file on an average is about 70 MB in size.
+gzip unzips about 60 MB per second or ~ 200 GB per hour.
+to unzip one file (70 MB) it would take 1.2 sec.
+to unzip 5400 files it will take about 5400 * 1.2 sec = 1.8 hours (assuming we do 10 files in parallel)
+if we unzip the files sequentially we will take 18 hours
+
+3) Processing the data
+Terasort benchmark suite sorts 1 TB of data in 209 Seconds ~  on an Hadoop cluster of 910 nodes.
+To process 3 TB we will need about 10 minutes.
+if we just have 10 nodes it will take 91 * 10 = 910 minutes = 15 Hours
+
+4) Sending back the results:
+Summarized data size is generally much smaller than raw data depending on what type of summarization was performed.
+If we count the number of bytes transferred for each hour of the 73 months, we will have ~ 73*30*24 = 50400 bytes = 50 KB
+50 KB should take a few seconds to upload. So the results can be uploaded pretty quickly. 
