@@ -1,0 +1,135 @@
+
+--------- This section will Load the data into PostGreSQL. We first load the data into R and then export it to csv files. 
+-- The csv files will then be imported into PostgreSQL database.
+A) Open a R console and run the following command to load the flights dataset, assuming the package is already installed:
+library(nycflights13)
+
+#Export the datasets to csv which will be later imported into PostgreSQL. It is assumed that the c:/tmp folder exists on the machine.
+# Run the follows commands in R after the flights dataset is loaded. These commands will create the csv files that will be imported
+# into the PostgreSQL database.
+
+write.csv(airlines, file='c:/tmp/airlines.csv', row.names=FALSE, na="")
+write.csv(airports, file='c:/tmp/airports.csv', row.names=FALSE, na="")
+write.csv(flights, file='c:/tmp/flights.csv', row.names=FALSE, na="")
+write.csv(planes, file='c:/tmp/planes.csv', row.names=FALSE, na="")
+write.csv(weather, file='c:/tmp/weather.csv', row.names=FALSE, na="")
+
+B) In PostgreSQL run the following DDL statments (through commandline or pgAdmin GUI) to create the tables.
+-- I created a new database called flights to create these tables.
+
+drop table if exists airlines;	
+CREATE TABLE airlines
+(
+  carrier character varying(50),
+  name character varying(50)
+);
+
+drop table if exists airports;	
+CREATE TABLE airports
+(
+  faa character varying(50),
+  name character varying(1000),
+  lat numeric NOT NULL,
+  lon numeric NOT NULL,
+  alt integer,
+  tz numeric NOT NULL,
+  dst character varying(50)
+);                                             
+
+drop table if exists flights;	
+CREATE TABLE flights
+(
+  year integer NOT NULL,
+  month integer NOT NULL,
+  day integer NOT NULL,
+  dep_time integer,
+  dep_delay integer,
+  arr_time integer,
+  arr_delay integer,
+  carrier character varying(50),
+  tailnum character varying(50),
+  flight integer NOT NULL,
+  origin character varying(50) NOT NULL,
+  dest character varying(50) NOT NULL,
+  air_time integer,
+  distance integer NOT NULL,
+  hour integer,
+  minute integer
+);
+
+drop table if exists planes;	
+CREATE TABLE planes
+(
+  tailnum character varying(50),
+  year integer,
+  type character varying(50),
+  manufacturer character varying(50),
+  model character varying(50),
+  engines integer,
+  seats integer,
+  speed integer,
+  engine character varying(50)
+);                                                                                   
+
+drop table if exists weather;	
+CREATE TABLE weather
+(
+  origin character varying(50),
+  year integer,
+  month integer,
+  day integer,
+  hour integer,
+  temp numeric,
+  dewp numeric,
+  humid numeric,
+  wind_dir numeric,
+  wind_speed numeric,
+  wind_gust numeric,
+  precip numeric,
+  pressure numeric,
+  visib numeric
+);                                                                                           
+
+C) Run the following commands through the PostgreSQL commandline to load the csv files exported from R.
+
+\copy airlines from 'c:/tmp/airlines.csv' DELIMITER ',' CSV HEADER;
+\copy airports from 'c:/tmp/airports.csv' DELIMITER ',' CSV HEADER;
+\copy flights from 'c:/tmp/flights.csv' DELIMITER ',' CSV HEADER;
+\copy planes from 'c:/tmp/planes.csv' DELIMITER ',' CSV HEADER;
+\copy weather from 'c:/tmp/weather.csv' DELIMITER ',' CSV HEADER;
+
+----------------------------------------------------------------------------
+------------------ THE SOLUTION STARTS HERE --------------------------------
+
+1) Complex join. Below is the join statement.
+
+select f.flight, a.name, f.tailnum, f.origin, f.dest from flights f 
+join airlines a on f.carrier=a.carrier where f.flight=461;
+
+-- The above Query takes 64.640 ms without index on flights.flight
+
+-- We create a index on the flight column of the flights table by executing the following SQL.
+CREATE INDEX idx_flight ON flights (flight);
+-- The Query now takes only 2.059 ms with the index. I executed this from the PostgreSQL command line.
+ We should only add as many indexes as absolutely required. Indexes have overheads. They consume space.
+ They also slow down the writes. We have to be careful when adding indexes to fields which undergo lots of updates.
+ Some databases require you to rebuild indexes once in a while. More indexes  take more time for the rebuild. 
+ In some databases the optimizer performance can be degraded due to an unwanted index while creating a execution plan. 
+
+2) We create a new table (total_dist) that stores the pre-aggregated total distance for each flight grouped by year, month and carrier.
+
+CREATE TABLE total_dist AS
+select year,month,carrier, sum(distance) as total_distance from flights group by year,month,carrier order by month;
+
+-- We then create a join between the pre-aggregated table, the flights table and the airlines table to get the
+-- aggregated distance and aggregated air_time grouped by year, month and carrier. The totals distance is sourced
+-- from the pre-aggregated total_dist table and the total air time is the calculated column. We get the name of the
+-- airline from the airlines table. The SQL is as follows.
+
+select f.year,f.month,f.carrier,a.name, sum(f.air_time) as total_air_time,d.total_distance from flights f
+join total_dist d on f.year=d.year and f.month=d.month and f.carrier=d.carrier
+join airlines a on f.carrier=a.carrier
+group by f.year,f.month,f.carrier,a.name, d.total_distance  order by f.month;
+
+3) The R code is published to rpubs.com at the following URL:
+http://rpubs.com/macburton/47198
