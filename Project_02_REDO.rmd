@@ -1,0 +1,143 @@
+---
+title: "Project 02"
+author: "Burton Machado"
+date: "Sunday, September 28, 2014"
+output: pdf_document
+---
+
+```{r test, echo=FALSE, message = FALSE, warnings = FALSE, tidy=TRUE, comment='!', collapse=FALSE, strip.white=TRUE}
+library(plyr)
+library(ggplot2)
+
+# We read a csv file with stock prices for IBM. These are daily benchmark values like 
+# Opening price, closing price etc. We will agrregate by month to perform the analytics.
+# We will show that the benchmark prices correlate to each other very strongly
+# The prices were sourced from quandl.com
+
+df<-read.csv('c:/Temp/IBM.csv',stringsAsFactors=FALSE)
+#head(df)
+#summary(df)
+#Create a new date column (year_month) that has only year and month so that we caln aggregate by year and month.
+#The day in this column is always set to 01
+
+year_month<-sub("-\\d\\d$","-01",df$Date)
+year_month<-as.Date(year_month,"%Y-%m-%d")
+df$Date <- as.Date(df$Date,"%Y-%m-%d")
+
+#bind the new column to the data frame
+
+df<-cbind(df,year_month)
+
+
+highLowDiffdf <- df$High - df$Low
+df<-cbind(df,highLowDiffdf)
+#summary(df$highLowDiffdf)
+#head(df)
+
+print("-------------------------------------------------------------------------------------------------")
+print("---- Stats for difference between the High and the Low price: ----")
+
+print(paste("The average difference between the High price and Low price is ",  round(mean(highLowDiffdf), 4), " dollars.", sep=''))
+print(paste("The Std Dev of the difference between the High price and Low price is ",  round(sd(highLowDiffdf), 4), " dollars.", sep=''))
+print(paste("The Max difference between the High price and Low price is ",  round(max(highLowDiffdf), 4), " dollars.", sep=''))
+print(paste("The Min difference between the High price and Low price is ",  round(min(highLowDiffdf), 4), " dollars.", sep=''))
+print(paste("The 1st Quartile of the difference between the High price and Low price is ",  round(quantile(highLowDiffdf)[2], 4), " dollars.", sep=''))
+print(paste("The 3rd Quartile of the difference between the High price and Low price is ",  round(quantile(highLowDiffdf)[4], 4), " dollars.", sep=''))
+
+# Summarize all the prices grouped by the year and month
+#---- Calculate the Means of the most important prices grouped by year and month ----
+
+means<-ddply(df, c('year_month'), function(x)c(mOpen=mean(x$Open),
+  mHigh=mean(x$High), mLow=mean(x$Low), mClose=mean(x$Close), mVolume=mean(x$Volume)))
+
+#---- Calculate the Standard Deviations of the most important prices  grouped by year and month ----
+
+stds<-ddply(df, c('year_month'), function(x)c(sOpen=sd(x$Open), 
+  sHigh=sd(x$High), sLow=sd(x$Low), sClose=sd(x$Close), sVolume=sd(x$Volume)))
+
+#---- Calculate the MAx of the most important prices  grouped by year and month ----
+
+maxs<-ddply(df, c('year_month'), function(x)c(mxOpen=sd(x$Open), 
+  mxHigh=max(x$High), mxLow=max(x$Low), mxClose=max(x$Close), mxVolume=max(x$Volume)))
+
+#---- Calculate the Min of the most important prices  grouped by year and month ----
+
+mins<-ddply(df, c('year_month'), function(x)c(mnOpen=sd(x$Open), 
+  mnHigh=min(x$High), mnLow=min(x$Low), mnClose=min(x$Close), mnVolume=min(x$Volume)))
+
+#---- Calculate the Quartiles of the most important prices  grouped by year and month ----
+
+qlts<-ddply(df, c('year_month'), function(x)c(qOpen=sd(x$Open), 
+  qHigh=quantile(x$High), qLow=quantile(x$Low), qClose=quantile(x$Close), qVolume=quantile(x$Volume)))
+
+
+#There is a strong positive corelation between the various prices and the 
+#Open price for a stock (IBM).In this case we have used the Open price for comparison, 
+#but it can be shown that this is true between all the price.
+
+print("-------------------------------------------------------------------------------------------------")
+print("---- There is a strong positive correlation between various prices as follows: ----")
+print( paste("The correlation coeff between the Open and High prices is ", round(cor(df$Open,df$High), 4), sep=''))
+print( paste("The correlation coeff between the Open and Close prices is ", round(cor(df$Open,df$Close), 4), sep=''))
+print( paste("The correlation coeff between the Open and Low prices is ", round(cor(df$Open,df$Low), 4), sep=''))
+print( paste("The correlation coeff between the High and Close prices is ", round(cor(df$High,df$Close), 4), sep=''))
+print( paste("The correlation coeff between the High and Low prices is ", round(cor(df$High,df$Low), 4), sep=''))
+print( paste("The correlation coeff between the Close and Low prices is ", round(cor(df$Close,df$Low), 4), sep=''))
+
+print("-------------------------------------------------------------------------------------------------")
+print("-- There is a stronger positive correlation between the aggregated means of the various prices --")
+
+print( paste("The correlation coeff between the monthly aggregated Open and High prices is ", round(cor(means$mOpen,means$mHigh), 4), sep=''))
+print( paste("The correlation coeff between the monthly aggregated Open and Low prices is ", round(cor(means$mOpen,means$mLow), 4), sep=''))
+print( paste("The correlation coeff between the monthly aggregated Open and Close prices is ", round(cor(means$mOpen,means$mClose), 4), sep=''))
+print( paste("The correlation coeff between the monthly aggregated High and Close prices is ", round(cor(means$mHigh,means$mClose), 4), sep=''))
+print( paste("The correlation coeff between the monthly aggregated High and Low prices is ", round(cor(means$mHigh,means$mLow), 4), sep=''))
+print( paste("The correlation coeff between the monthly aggregated Close and Low prices is ", round(cor(means$mClose,means$mLow), 4), sep=''))
+
+print("-------------------------------------------------------------------------------------------------")
+print("-- There is a stronger positive correlation between the aggregated std dev of the various prices --")
+print( paste("The correlation coeff between the std dev of monthly aggregated Open and High prices is ", round(cor(stds$sOpen,stds$sHigh), 4), sep=''))
+
+print( paste("The correlation coeff between the std dev of monthly aggregated Open and Low prices is ", round(cor(stds$sOpen,stds$sLow), 4), sep=''))
+
+print( paste("The correlation coeff between the std dev of monthly aggregated Open and Close prices is ", round(cor(stds$sOpen,stds$sClose), 4), sep=''))
+
+print( paste("The correlation coeff between the std dev of monthly aggregated High and Close prices is ", round(cor(stds$sHigh,stds$sClose), 4), sep=''))
+
+print( paste("The correlation coeff between the std dev of monthly aggregated High and Low prices is ", round(cor(stds$sHigh,stds$sLow), 4), sep=''))
+
+print( paste("The correlation coeff between the std dev of monthly aggregated Close and Low prices is ", round(cor(stds$sClose,stds$sLow), 4), sep=''))
+#There is a strong positive correlation between the aggregated standard deviations of 
+#various prices and the standard deviation of the Open price for a stock (IBM). 
+#This means that the variations among the prices are also correlated. In this case 
+#we have used the Open price for comparison, but it can be shown that this is true 
+#between all the price.
+
+#------------------------------------------------------------------------------------------
+# A visual inspection of the two plots below shows how similar the Open and Close prices are
+# 
+print("A visual inspection of the two plots below shows how similar the Open and Close prices are.")
+```
+
+
+```{r, echo=FALSE, message = FALSE, warnings = FALSE, tidy=TRUE, comment='', collapse=TRUE, strip.white=TRUE}
+
+ggplot(data=df, aes(x=year_month, y=Close, group=1)) + geom_line()
+
+ggplot(data=df, aes(x=year_month, y=Open, group=1)) + geom_line()
+```
+```{r, echo=FALSE, message = FALSE, warnings = FALSE, tidy=TRUE, comment='', collapse=TRUE, strip.white=TRUE}
+#Run least square regression on Open and Close prices
+#We will get the equation of the regression line.
+#Note from the equation how close to 1 the slope is and how small the y intercept is
+r<-lm(df$Open~df$Close)
+print(paste("The equation of the regression line is Open = " ,r[[1]][[2]],"Close + ", r[[1]][[1]]),sep="")
+#print("Here x is df$Close and y is df$Open") 
+```
+
+```{r, echo=FALSE, message = FALSE, warnings = FALSE, tidy=TRUE, comment='', collapse=TRUE, strip.white=TRUE}
+# The plot below shows a linear relationship between the Open and Close prices
+# The slope is very close to 1 showing that Open and Close are almost equal
+ggplot(data=df, aes(x=Close, y=Open, group=1)) + geom_smooth(method='lm')
+```
+
