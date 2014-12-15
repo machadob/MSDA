@@ -1,0 +1,358 @@
+---
+title: "FINAL Project"
+author: "Burton Machado"
+date: "Saturday, November 29, 2014"
+output: pdf_document
+---
+
+# **Portfolio Analytics:**
+
+My project is based on financial data. We will be calculating the Beta for a number of Portfolios consisting of stocks. We will show that the Risk (Beta) of a Portfolio changes with the quantity of different Assets in the Portfolio. This means that the Risk of the portfolio can be managed by adjusting the quantities of the Assets in the Portfolio. Specifically, if we reduce the quantity of a more volatile (High Beta) Asset and increase the quantity of a less volatile Asset in the portfolio, we reduce the Risk (Beta) of the entire Portfolio.
+
+The **Beta of a portfolio** is the weighted sum of the individual Betas of each component of the Portfolio. The weighting depends upon the quantity of a stock within a portfolio. The Beta is a measure of the volatility of a Portfolio. A Beta of 1 means that the Portfolio is in sync with the wider market. If the  Beta is more than 1 the portfolio has greater volatility, whereas it is consider lesser volatile if the Beta is less than 1. The Beta is an important component of the **Capital Asset Pricing Model**, which attempts to use **Volatility** and **Risk** to estimate expected returns. We will calculate the Beta for Portfolios with the same stocks but with different quantities to see if we can get a lower Beta by adjusting the quantities in the Portfolios. We will also calculate the Beta for a Portfolio with one stock replaced by a different one.
+
+For the analysis, I will first create multiple portfolios of stocks. The portfolios will consist of the Stocks and their Quantities. I will then find the Beta for one portfolio at a time. To find the Beta, I will have to fetch the historical prices for each of the stocks in the portfolio. I will also need to fetch the historical prices for an index (S&P 500 in this case) that is representative of the broader market. These prices will be fetched dynamically using a URL that is created at runtime using the stock symbols in the portfolio. After getting the historical prices for the each stock and the index, we calculate the Beta for each individual stock by calculating the covariance of the stock with the index and dividing the result with the variance of the index. To find the Beta of a portfolio of stocks, we need to first find the betas for all individual stocks in the portfolio. Each beta will then multiplied by the percentage of the total portfolio that stock represents to get a weighted beta. Adding all the weighted betas will give the Portfolio's overall beta.
+
+**Note:** *Please Refer to the Appendix at the end of this document for more information on functions used to calculate the Beta of a asset, Beta of a Portfolio etc., and how they are calculated. I have done these calculations in the code. For Graphics, I have used the **Lattice graphics package** in addition to the ggplot2 package*
+
+```{r, echo=FALSE}
+library(ggplot2)
+#If lattice is not installed, you have to install it.
+library(lattice)
+library(grid)
+library(gridExtra)
+```
+
+```{r, echo=FALSE}
+# The function below uses the Lattice graphics package for plotting the densities.
+generateDensityPlot <- function(asset, assetReturns){
+  d<-densityplot(~assetReturns, main=paste("Density Plot for returns of ", asset), xlab=paste("Asset = ", asset))
+  return(d)
+}
+```
+
+```{r, echo=FALSE}
+# This Function will create the URL in the right format to fetch data from Yahoo Finance. The URL will be 
+# dynamically created using the asset symbol passed to the function.
+createURL <- function(asset){
+  return(paste("http://real-chart.finance.yahoo.com/table.csv?s=", asset, "&a=10&b=01&c=2009&d=10&e=01&f=2014&g=m&ignore=.csv", sep=''))
+}
+
+webData=TRUE # Get data from the web if TRUE, otherwise get data from the local file system.
+# The function below will convert the Date from String to Date type.
+getAndTidyData <- function(asset){
+   if(webData){
+     df <- read.csv(createURL(asset), header=TRUE, stringsAsFactors=FALSE)      
+   }else{
+     df <- read.csv(paste('C:/001-Semester_01_CUNY/607_Data_Acquisition_And_Management/PROJECT/', asset, '.csv', sep=''), header=TRUE, stringsAsFactors=FALSE)
+   }
+   
+   # We will convert the date column from a String to a Date 
+   df$Date <- as.Date(df$Date, "%Y-%m-%d")
+   # Check for outliers
+   df <- filterOutLiers(df)
+   return(df)
+}
+
+# We filter any prices tht fall outside of 3 standard deviations from the mean.
+filterOutLiers <- function(df){
+  closePrice = df$Close
+  sdClose = sd(closePrice)
+  meanClose = mean(closePrice)
+  df <- df[df$Close < (3*sdClose + meanClose),]
+  if(3*sdClose < meanClose){ #Prices cannot be negetive.
+    df <- df[df$Close > (3*sdClose - meanClose),]
+  }
+  return(df)
+}
+
+#Function to monthly return of an asset (For a 5 year period).
+calculateReturns <- function(asset){
+  returns = c()
+  df <- getAndTidyData(asset)
+  for(i in 1:length(df$Adj.Close)){
+    ret = (df$Adj.Close[i] - df$Adj.Close[i+1])/df$Adj.Close[i+1]
+    returns <- append(returns, ret)
+  }
+  returns <- returns[!is.na(returns)]
+  #plot(df$date, df$Close)
+  return(returns)
+}
+
+#Function to calculate beta of a stock in relation to the S&P 500 Index.
+calculateAssetBeta <- function(asset){
+  assetReturns = calculateReturns(asset)
+  returnsSAP500 = calculateReturns("%5EGSPC") #%5EGSPC is the symbol for SAP 500
+  # Find the covariance of the returns of the Stock with returns of SAP 500.
+  cov_stock_sap = cov(assetReturns, returnsSAP500)
+  #Find the variance of SAP 500 returns
+  var_sap = var(returnsSAP500)
+  #The beta for a Stock is the ratio of covariance (of returns of the Stock and SAP 500) to the variance of SAP 500 returns.
+  beta_stock = cov_stock_sap/var_sap
+  return(beta_stock)
+}
+
+calculatePortfolioBeta <- function(portfolio){
+  noOfAssetsInPortfolio = length(portfolio[[1]])
+  totalQtyInPortfolio = sum(portfolio[[2]])
+  finalBeta = 0.0
+  for( i in 1:length(portfolio[[1]])){
+    assetBeta = calculateAssetBeta(portfolio[[1]][i])
+    percentageQty = (portfolio[[2]][i]*100/totalQtyInPortfolio)/100
+    finalBeta = finalBeta + assetBeta*percentageQty
+  }
+  return(finalBeta)
+}
+```
+
+**We first create a list of Portfolios. We will create three Portfolios with the following compositions:**
+
+**Portfolio 1:**
+  *Stock: **IBM**, Quantity: **50***
+  *Stock: **YHOO**, Quantity: **50***
+  *Stock: **AAPL**, Quantity: **25***
+  
+**Portfolio 2:**
+  *Stock: **IBM**, Quantity: **30***
+  *Stock: **YHOO**, Quantity: **30***
+  *Stock: **AAPL**, Quantity: **65***
+  
+**Portfolio 3:**
+  *Stock: **IBM**, Quantity: **30***
+  *Stock: **CSCO**, Quantity: **30***
+  *Stock: **AAPL**, Quantity: **30***
+  
+```{r, echo=FALSE}
+# Returns for each Portfolio
+
+# We create a list of portfolios with some stocks with different proportions in each Portfolio.
+# # Create some portfolios with a mix of stocks and varying quantities
+portfolio_1 <- list(c('IBM','YHOO', 'AAPL'), c(25, 75, 25))
+portfolio_2 <- list(c('IBM','YHOO', 'AAPL'), c(30, 30, 65))
+portfolio_3 <- list(c('IBM','CSCO', 'AAPL'), c(30, 30, 65))
+# 
+```
+
+
+For each stock in the portfolio we get the monthly returns for a time period from Oct 2009 to Oct 2014.
+We will get the returns in the following format:
+
+```{r, echo=FALSE}
+# The lines below asre used for generating example output in the pdf output.
+df <- read.csv(createURL('IBM'), header=TRUE, stringsAsFactors=FALSE)
+head(df)
+```
+#**Analysis**
+
+The statistical analysis will consist of all analysis steps that will be needed to create the final Beta for the entire portfolio. In particular, the following analysis will be performed:
+
+*1) Calculate the monthly returns for each stock in a portfolio.*
+
+*2) Calculate the monthly returns for the S&P 500 Index.*
+
+*3) Calculate the Covariance of each stock with the S&P 500 Index.*
+
+*4) Calculate the Variance of the S&P 500 Index.*
+
+*5) Calculate the Beta of each Stock in the Portfolio.*
+
+*6) Calculate the Beta of the entire Portfolio.*
+
+*7) Repeat the above steps for each portfolio.*
+
+**Summary Statistics for the IBM Dataset is as follows:**
+
+```{r, echo=FALSE}
+summary(df)
+```
+
+
+**NOTE:** We will be using the  **Monthly Close** price from **Nov-2009 to Oct-2014** for our calculations.
+
+# **Data Cleansing:**
+
+I have provided a function (*filterOutLiers*) to cleanse data that filters out prices that lie outside of 3 standard deviations from the mean. Since the data that I get from Yahoo Finance is already cleaned, I did not find any outliers in the prices. I still call that function after getting the data from Yahoo finance. 
+
+# **Data Conversion:**
+
+We get the data from **Yahoo finance** through a **dynamically created URL** directly into a data frame.
+The **Date** column will be converted from **String to a Date** type. This is done by the *getAndTidyData* function.
+
+# **Assumptions:**
+
+To calculate the **Beta** for an asset in the Portfolio it is assumed that the returns for the Asset
+follow (roughly) a normal distribution.
+The plots below show the distribution (density)  for the assets in portfolio_1 and the SAP 500 Index that 
+will be used to calculate the Beta. You can see that the plots roughly represent a normal distribution.
+
+```{r, echo=FALSE, warning=FALSE}
+# # Create a list  of portfolios
+portfolios = list(portfolio_1, portfolio_2, portfolio_3)
+
+# Get the periodic returns of the Assets that we use in our Portfolios.
+returnsYahoo = calculateReturns('YHOO')
+returnsIBM = calculateReturns('IBM')
+returnsAPPLE = calculateReturns('AAPL')
+returnsCSCO = calculateReturns('CSCO')
+returnsSAP500 = calculateReturns('%5EGSPC')
+
+px1 = generateDensityPlot('YHOO', returnsYahoo)
+px2 = generateDensityPlot('IBM', returnsIBM)
+px3 = generateDensityPlot('AAPL', returnsAPPLE)
+px4 = generateDensityPlot('SAP 500', returnsSAP500)
+plot1=grid.arrange(px1, px2, px3, px4, ncol = 2, main = "------------- Density Plots for Close Price -------------")
+
+```
+`r print(plot1)`
+---------------------------------------------------------------------------------------------------
+**Regression Plots:**
+
+Next, we look at the regression plots and regression lines for some assets in the Portfolios. From the regression plots below, we can visually see that the slope of YAHOO returns is out of sync with the slope of SAP 500 the most. So we can predict that out of all the Assets in the portfolios, Yahoo will be most out of sync with SAP 500. Hence a portfolio that is weighted more by YAHOO (i.e. has more YAHOO stocks) will be more volatile and will have a beta that is more than a Portfolio that has lesser of YAHOO  and more of the other stocks.
+
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE,tidy=FALSE}
+num<-1:length(returnsYahoo)
+py1 = xyplot(returnsYahoo~num,as.table = TRUE, pch = 20, panel = function(x, y, ...) {
+panel.xyplot(x, y, ...)
+fit <- lm(y ~ x)
+panel.abline(fit, lwd = 2)
+}, xlab="Week Number", ylab=paste("Asset - ", 'YHOO'))
+
+py2 = xyplot(returnsIBM~num,as.table = TRUE, pch = 20, panel = function(x, y, ...) {
+panel.xyplot(x, y, ...)
+fit <- lm(y ~ x)
+panel.abline(fit, lwd = 2)
+}, xlab="Week Number", ylab=paste("Asset - ", 'IBM'))
+
+py3 = xyplot(returnsAPPLE~num,as.table = TRUE, pch = 20, panel = function(x, y, ...) {
+panel.xyplot(x, y, ...)
+fit <- lm(y ~ x)
+panel.abline(fit, lwd = 2)
+}, xlab="Week Number", ylab=paste("Asset - ", 'AAPL'))
+
+py4 = xyplot(returnsSAP500~num,as.table = TRUE, pch = 20, panel = function(x, y, ...) {
+panel.xyplot(x, y, ...)
+fit <- lm(y ~ x)
+panel.abline(fit, lwd = 2)
+}, xlab="Week Number", ylab=paste("Asset - ", 'SAP500'))
+
+plot2=grid.arrange(py1, py2, py3, py4, ncol = 2, main = "------------- Regression Plots -------------")
+
+```
+`r print(plot2)`
+
+We will further check our suspicion about YAHOO by checking if the Covariance of YAHOO is more than the Covariance of any other Asset that is part of the Portfolios containing YAHOO. The Portfolios 1 and 2 contain YAHOO, IBM and APPLE, so we will check the Covariances of these assets and see if YAHOO has the most Covariance with SAP 500.
+
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE,tidy=FALSE} 
+cov_YAHOO_SAP500 = cov(returnsYahoo, returnsSAP500)
+cov_IBM_SAP500 = cov(returnsIBM, returnsSAP500)
+cov_APPLE_SAP500 = cov(returnsAPPLE, returnsSAP500)
+```
+*The Covariance of YAHOO with SAP 500 is : * **`r round(cov_YAHOO_SAP500, digits=3)`**
+
+*The Covariance of IBM with SAP 500 is : * **`r round(cov_IBM_SAP500, digits=3)`**
+
+*The Covariance of APPLE with SAP 500 is : * **`r round(cov_APPLE_SAP500, digits=3)`**
+
+YAHOO indeed has the highest covariance. So We can now predict that YAHOO will increase the risk (Beta) fo a portfolio if it has a higher weightage with respect to other Assets in the same Portfolio. That is, greater the Quantity of YAHOO stock in a portfolio the greater its risk (Beta).
+In particular, the Portfolio 1 has a higher number of Yahoo stocks than Portfolio 2, so it should have a higher Beta. These Two portfolios also have the same Assets but in varying quantities.
+We now move on to calculate the Beta.
+
+**Beta Calculations:**
+
+We will now calculate the Beta for each of the Portfolio. To find the Beta of a portfolio of stocks, we need to first find the betas for all individual stocks in the portfolio. Each beta will then multiplied by the percentage of the total portfolio that stock represents to get a weighted beta. Adding all the weighted betas will give the Portfolio's overall beta. 
+
+
+```{r, echo=FALSE}
+betaIBM = calculateAssetBeta('IBM')
+betaYHOO = calculateAssetBeta('YHoo')
+betaAAPL = calculateAssetBeta('AAPL')
+betaCSCO = calculateAssetBeta('CSCO')
+
+betaPortFolio_1 = calculatePortfolioBeta(portfolio_1)
+betaPortFolio_2 = calculatePortfolioBeta(portfolio_2)
+betaPortFolio_3 = calculatePortfolioBeta(portfolio_3)
+```
+**Following are the Betas of the Stocks in the Porfolios:**
+
+The Beta of ***IBM*** is : **`r round(betaIBM, digits=5)`**
+
+The Beta of ***YAHOO*** is : **`r round(betaYHOO, digits=5)`**
+
+The Beta of ***APPLE*** is : **`r round(betaAAPL, digits=5)`**
+
+The Beta of *CISCO* is : **`r round(betaCSCO, digits=5)`**
+
+**Following are the Betas of the Porfolios:**
+
+The Beta of ***Portfolio 1*** is : **`r round(betaPortFolio_1, digits=5)`**
+
+The Beta of ***Portfolio 2*** is : **`r round(betaPortFolio_2, digits=5)`**
+
+The Beta of ***Portfolio 3*** is : **`r round(betaPortFolio_3, digits=5)`**
+
+From the above calculation we see the Beta of Portfolio 2 is greater than the Beta of Portfolio 1 because it has substantially greater number of YAHOO stocks as compared to Portfolio 1. 
+
+The figure below shows the Betas for the Assets in Portfolios 1 and 2. We see that the Beta of YAHOO is much higher than the other two Stocks.
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE,tidy=FALSE} 
+a <- rgb(red=150, green=191, blue=37, maxColorValue = 255)
+b <- rgb(red=80, green=113, blue=14, maxColorValue = 255)
+
+assetSymbols <- c("IBM", "YHOO", "AAPL")
+betaAssets <- c(betaIBM, betaYHOO, betaAAPL)
+dfAssetBeta <- data.frame(assetSymbols, betaAssets)
+ggplot(dfAssetBeta, aes(x=assetSymbols, y=betaAssets)) + geom_bar(stat="identity") + theme_classic() + scale_fill_manual(values = c(b,a)) + scale_y_continuous(limit=c(0,2), expand=c(0,0)) +labs(title = 'Betas for Components of Porfolio 1 and 2', x = "Asset Symbol", y = "Beta of Asset")
+```
+
+The figure below shows the Betas for the three Portfolios. We can see that the Beta for Portfolio 1 is higher than Portfolio 2 because though the two Portfolios have the same symbols and same total quantity, Portfolio 1 has higher number of Yahoo stocks. The beta of Yahoo being higher than other stocks, increases the overall Beta of the Portfolio.
+The Beta of Portfolio 3 is also high because the Beta of CSCO is also high. The Beta of CSCO is `r betaCSCO`, which is quite high.
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE,tidy=FALSE} 
+portfolioNames <- c("Portfolio_1", "Portfolio_2", "Portfolio_3")
+betaPortfolio <- c(betaPortFolio_1, betaPortFolio_2, betaPortFolio_3)
+dfPortfolioBeta <- data.frame(portfolioNames, betaPortfolio)
+ggplot(dfPortfolioBeta, aes(x=portfolioNames, y=betaPortfolio)) + geom_bar(stat="identity") + theme_classic() + scale_fill_manual(values = c(b,a)) + scale_y_continuous(limit=c(0,2), expand=c(0,0)) +labs(title = 'Betas for Porfolios 1,2 and 3', x = "Portfolio Name", y = "Beta of Portfolio")
+
+```
+
+# **Conclusion:**
+
+The Risk (Beta) of a Portfolio depends on the Risk (Beta) of its individual components. By balancing the quantities of each component in a Portfolio, we can control (reduce) the total Risk (Beta) of a Portfolio. In our case, Portfolio 1 and Portfolio 2 had the same stocks (IBM, YAHOO and APPLE) and the same total Quantity (125), but Portfolio 1 had more (50) Yahoo stocks than Portfolio 2 (30). Since Yahoo had the highest Beta amongst the three stocks, It pushed up the Total weighted beta of Portfolio 1.
+
+*That concludes our Analysis.*
+
+# **Appendix:**
+
+**Important functions in the Code:**
+
+1) *calculateReturns:* This function calculates the periodic returns of the price of a Asset. It uses the Closing price in our case.
+
+2) *calculateAssetBeta:* This function calculates the Beta of a Portfolio component. You need to pass in the periodic returns of the Asset.
+
+3) *calculatePortfolioBeta:* This function calculates the Beta of a Portfolio. It takes a Portfolio as the argument.
+
+4) *filterOutLiers:* This function filters out records that have the Closing price that is outside of 3 standard deviations from the mean. It takes a data frame as an input and returns the filtered data frame.
+
+4) *generateDensityPlot:* This function uses the Lattice Framework to generate a Density plot for an Asset.  It takes the Asset name and its periodic returns as arguments. 
+
+5) *getAndTidyData:* This function gets the Data for an Asset from Yahoo Finance and converts the Date column from String into Date. It takes the Asset symbol (Ticker) as the input.
+
+6) *createURL:* This function creates a URL for Yahoo finance dynamically using the Asset Symbol. It returns the Monthly prices for the Asset.
+
+#**Algorithms for calculating Beta:**
+  
+**Beta calculation for a Asset/Stock.**
+
+Following are the steps to calculate the Beta of an asset:
+
+1) Calculate the returns of the Asset for a specific period of time.
+2) Calculate the returns of the SAP 500 index for the period.
+3) Calculate the covariance of the returns of the Asset and the returns of the SAP 500 index.
+4) Calculate the variance of the returns of SAP 500 index.
+5) Divide the covariance from step 3 by the variance from step 4 to get the Beta.
+
+**Beta calculation for a Portfolio.**
+
+To determine Portfolio betas, you must weight individual Asset betas to produce a beta that reflects the proportion of each asset in the Portfolio. The first step is to multiply the beta of each asset by that asset's proportion of the portfolio, expressed as a percentage. The formula for weighted portfolio beta is the sum of these values. For example, if a stock portfolio includes 20 shares of a stock with a beta of 1, 40 shares of a stock with a beta of 2 and 40 shares of stock with a beta of 1.5, the first step reveals values of .2 (20 percent times 1), .8 (40 percent times 2) and .6 (40 percent times 1.5). The sum of these, and the portfolio beta, is 1.6.
